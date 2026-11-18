@@ -40,6 +40,7 @@ input{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);
 #list{overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
 .bk{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}.bk b{display:block}.bk small{color:var(--mute)}
 .empty{color:var(--mute);padding:10px;text-align:center}
+.sum{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px;margin:6px 0 14px}.st{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}.st b{display:block;font-size:20px}.st small{color:var(--mute)}
 .foot{text-align:center;color:var(--mute);font-size:12px;padding:20px}
 </style>
 </head>
@@ -145,15 +146,24 @@ function render(){const l=$("#list");l.innerHTML="";if(!mine.length){l.innerHTML
 async function submit(t){if(busy||!t.trim())return;busy=true;user(t);try{await handle(t)}finally{busy=false}}
 async function ownerView(id){
  document.documentElement.style.setProperty("--c","#0f9d8a");const biz=BIZ.find(x=>x.id===id);
- root.innerHTML='<div class="wrap"><div class="hero"><h1></h1><p>Owner view · today’s bookings and what’s coming</p></div><form id="pf" style="max-width:340px;margin:0 auto;border:0"><input id="pin" type="password" placeholder="Owner PIN" autocomplete="off"><button class="send">Open</button></form><div id="ob" style="max-width:560px;margin:10px auto"></div></div>';
- $(".hero h1").textContent=biz?biz.emoji+" "+biz.name:"Unknown business";let pin=store.get("pin_"+id,"");
+ root.innerHTML='<div class="wrap"><div class="hero"><h1></h1><p>Owner view · your bookings at a glance</p></div><form id="pf" style="max-width:340px;margin:0 auto;border:0"><input id="pin" type="password" placeholder="Owner PIN" autocomplete="off"><button class="send">Open</button></form><div id="ob" style="max-width:560px;margin:10px auto"></div></div>';
+ $(".hero h1").textContent=biz?biz.emoji+" "+biz.name:"Unknown business";let pin=store.get("pin_"+id,""),last=null;
+ const waNum=p=>{let n=String(p).replace(/\D/g,"");if(n[0]==="0")n="233"+n.slice(1);return n};
+ const mins=t=>{const[h,m]=t.split(":").map(Number);return h*60+m};
+ const stat=(v,l)=>{const e=document.createElement("div");e.className="st";e.innerHTML="<b></b><small></small>";e.querySelector("b").textContent=v;e.querySelector("small").textContent=l;return e};
  const load=async()=>{const r=await api({action:"bookings",b:id,pin}),o=$("#ob");if(!r||!r.ok){o.innerHTML='<div class="empty">'+(SCRIPT_URL?"Enter your owner PIN.":"Connect the backend (SCRIPT_URL) to use the owner view.")+"</div>";return false}
-  const today=key(new Date()),live=r.bookings.filter(b=>b.status!=="cancelled"&&b.date>=today);o.innerHTML="";
-  if(!live.length){o.innerHTML='<div class="empty">No upcoming bookings.</div>';return true}
-  let last="";live.forEach(b=>{if(b.date!==last){last=b.date;const h=document.createElement("h3");h.textContent=(b.date===today?"Today · ":"")+nice(b.date);h.style.margin="16px 0 6px";o.append(h)}
+  const now=new Date(),today=key(now),nm=now.getHours()*60+now.getMinutes(),live=r.bookings.filter(b=>b.status!=="cancelled"&&b.date>=today);o.innerHTML="";
+  if(last){const c=document.createElement("div");c.className="bk";c.style.borderColor="#25d366";c.innerHTML='<b></b><small>Let the customer know:</small><br><a class="wa" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px"></a> <button class="chip" type="button">Dismiss</button>';
+   c.querySelector("b").textContent="Cancelled "+last.ref+" · "+last.name;const w=c.querySelector("a");w.textContent="Tell "+last.name.split(" ")[0]+" on WhatsApp";w.href=last.link;c.querySelector("button").onclick=()=>{last=null;load()};o.append(c)}
+  const td=live.filter(b=>b.date===today),nx=live.find(b=>b.date>today||(b.date===today&&mins(b.time)>=nm)),sm=document.createElement("div");sm.className="sum";
+  sm.append(stat(td.length,"Today"),stat(live.length,"Upcoming"),stat(nx?(nx.date===today?"":nice(nx.date).split(",")[0]+" ")+t12(nx.time):"None","Next · "+(nx?nx.name.split(" ")[0]:"no bookings")));o.append(sm);
+  if(!live.length){const e=document.createElement("div");e.className="empty";e.textContent="No upcoming bookings.";o.append(e);return true}
+  let lastD="";live.forEach(b=>{if(b.date!==lastD){lastD=b.date;const h=document.createElement("h3");h.textContent=(b.date===today?"Today · ":"")+nice(b.date);h.style.margin="16px 0 6px";o.append(h)}
    const e=document.createElement("div");e.className="bk";e.innerHTML='<b></b><small></small><br><a></a> <button class="chip" type="button" style="margin-top:6px">Cancel</button>';
    e.querySelector("b").textContent=t12(b.time)+" · "+b.service;e.querySelector("small").textContent=b.name+" · "+b.ref;const a=e.querySelector("a");a.textContent=b.phone;a.href="tel:"+b.phone.replace(/[^\d+]/g,"");
-   e.querySelector("button").onclick=async()=>{if(confirm("Cancel "+b.ref+"?")){await api({action:"cancel",b:id,pin,ref:b.ref});load()}};o.append(e)});return true};
+   e.querySelector("button").onclick=async()=>{if(!confirm("Cancel "+b.ref+" for "+b.name+"?"))return;await api({action:"cancel",b:id,pin,ref:b.ref});
+    const msg="Hello "+b.name.split(" ")[0]+", this is "+biz.name+". Sorry, we have to cancel your booking "+b.ref+" ("+b.service+", "+nice(b.date)+" at "+t12(b.time)+"). Please message us to pick another time. Thank you for understanding.";
+    last={ref:b.ref,name:b.name,link:"https://wa.me/"+waNum(b.phone)+"?text="+encodeURIComponent(msg)};load()};o.append(e)});return true};
  $("#pf").onsubmit=async e=>{e.preventDefault();pin=$("#pin").value;if(await load()){store.set("pin_"+id,pin);clearInterval(window._t);window._t=setInterval(load,30000)}};
  if(pin&&await load())window._t=setInterval(load,30000)}
 init();
