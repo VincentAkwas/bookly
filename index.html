@@ -41,6 +41,7 @@ input{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);
 .bk{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}.bk b{display:block}.bk small{color:var(--mute)}
 .empty{color:var(--mute);padding:10px;text-align:center}
 .sum{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px;margin:6px 0 14px}.st{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}.st b{display:block;font-size:20px}.st small{color:var(--mute)}
+.fu{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--bot)}
 .foot{text-align:center;color:var(--mute);font-size:12px;padding:20px}
 </style>
 </head>
@@ -50,6 +51,7 @@ input{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);
 /* ====== SETUP: paste your Google Apps Script Web App URL between the quotes ====== */
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwKAmuIesugZ2eg_2acEEhEw_9nxuNNeFdq1zhll0JA4PhiKYHV_GIvvAgZDbMdnxxCYg/exec";
 /* ================================================================================== */
+const NUDGE_DAYS=21; // days after a visit before the "come back" nudge appears
 const DEMO=[
  {id:"lablens-lab",name:"LabLens Diagnostics Lab",tagline:"Accurate results, fast",emoji:"🧪",color:"#3b82f6",open:8,close:16,whatsapp:"233509460156",services:[{name:"Malaria test",price:"30"},{name:"Full blood count",price:"50"},{name:"Urinalysis",price:"25"},{name:"Blood sugar",price:"20"},{name:"Lipid profile",price:"120"}]},
  {id:"curtain-pro",name:"Curtain Pro Installations",tagline:"Measured, fitted, finished",emoji:"🪟",color:"#b45309",open:8,close:17,whatsapp:"233509460156",services:[{name:"Site visit & measurement",price:"0"},{name:"Curtain installation",price:"150"},{name:"Rod & rail fitting",price:"80"},{name:"Blinds fitting",price:"100"}]},
@@ -151,12 +153,29 @@ async function ownerView(id){
  const waNum=p=>{let n=String(p).replace(/\D/g,"");if(n[0]==="0")n="233"+n.slice(1);return n};
  const mins=t=>{const[h,m]=t.split(":").map(Number);return h*60+m};
  const stat=(v,l)=>{const e=document.createElement("div");e.className="st";e.innerHTML="<b></b><small></small>";e.querySelector("b").textContent=v;e.querySelector("small").textContent=l;return e};
+
+ const followUps=(o,r,today,nm)=>{
+  const all=r.bookings.filter(b=>b.status!=="cancelled"),dk=n=>{const x=new Date();x.setDate(x.getDate()+n);return key(x)},done=store.get("fu_"+id,{}),due=[],lastBy={};
+  const past=b=>b.date<today||(b.date===today&&mins(b.time)<nm);
+  all.forEach(b=>{if(b.date===dk(1)&&!done[b.ref+"r"])due.push({k:"r",b,label:"Reminder"});if(past(b)&&b.date>=dk(-3)&&!done[b.ref+"t"])due.push({k:"t",b,label:"Thank you"});const p=waNum(b.phone);if(!lastBy[p]||b.date+b.time>lastBy[p].date+lastBy[p].time)lastBy[p]=b});
+  Object.values(lastBy).forEach(b=>{if(past(b)&&b.date<=dk(-NUDGE_DAYS)&&b.date>=dk(-120)&&!done[b.ref+"n"])due.push({k:"n",b,label:"Come back"})});
+  const h=document.createElement("h3");h.style.margin="16px 0 6px";h.textContent="Follow-ups due ("+due.length+")";o.append(h);
+  if(!due.length){const e=document.createElement("div");e.className="empty";e.textContent="All caught up ✓";o.append(e);return}
+  const link=location.origin+location.pathname+"?b="+encodeURIComponent(id);
+  due.forEach(({k,b,label})=>{const f=b.name.split(" ")[0],sv=b.service.toLowerCase();
+   const msg=k==="r"?"Hello "+f+", this is "+biz.name+". A friendly reminder of your "+b.service+" appointment tomorrow, "+nice(b.date)+" at "+t12(b.time)+". Reply here if you need to change it. See you!":
+    k==="t"?"Hello "+f+", thank you for visiting "+biz.name+"! We hope you enjoyed your "+sv+". We’d love to see you again, you can book any time here: "+link:
+    "Hello "+f+", it’s been a while since your "+sv+" at "+biz.name+". Ready for your next one? Book here: "+link;
+   const e=document.createElement("div");e.className="bk fu";e.innerHTML='<div><span class="tag"></span> <b></b><small style="display:block"></small></div><div><a class="wa" target="_blank" rel="noopener">Send</a> <button class="chip" type="button">Skip</button></div>';
+   e.querySelector(".tag").textContent=label;e.querySelector("b").textContent=b.name;e.querySelector("small").textContent=b.service+" · "+nice(b.date)+" "+t12(b.time);
+   const a=e.querySelector("a");a.href="https://wa.me/"+waNum(b.phone)+"?text="+encodeURIComponent(msg);
+   const mark=()=>{done[b.ref+k]=1;store.set("fu_"+id,done);setTimeout(load,600)};a.onclick=mark;e.querySelector("button").onclick=mark;o.append(e)})};
  const load=async()=>{const r=await api({action:"bookings",b:id,pin}),o=$("#ob");if(!r||!r.ok){o.innerHTML='<div class="empty">'+(SCRIPT_URL?"Enter your owner PIN.":"Connect the backend (SCRIPT_URL) to use the owner view.")+"</div>";return false}
   const now=new Date(),today=key(now),nm=now.getHours()*60+now.getMinutes(),live=r.bookings.filter(b=>b.status!=="cancelled"&&b.date>=today);o.innerHTML="";
   if(last){const c=document.createElement("div");c.className="bk";c.style.borderColor="#25d366";c.innerHTML='<b></b><small>Let the customer know:</small><br><a class="wa" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px"></a> <button class="chip" type="button">Dismiss</button>';
    c.querySelector("b").textContent="Cancelled "+last.ref+" · "+last.name;const w=c.querySelector("a");w.textContent="Tell "+last.name.split(" ")[0]+" on WhatsApp";w.href=last.link;c.querySelector("button").onclick=()=>{last=null;load()};o.append(c)}
   const td=live.filter(b=>b.date===today),nx=live.find(b=>b.date>today||(b.date===today&&mins(b.time)>=nm)),sm=document.createElement("div");sm.className="sum";
-  sm.append(stat(td.length,"Today"),stat(live.length,"Upcoming"),stat(nx?(nx.date===today?"":nice(nx.date).split(",")[0]+" ")+t12(nx.time):"None","Next · "+(nx?nx.name.split(" ")[0]:"no bookings")));o.append(sm);
+  sm.append(stat(td.length,"Today"),stat(live.length,"Upcoming"),stat(nx?(nx.date===today?"":nice(nx.date).split(",")[0]+" ")+t12(nx.time):"None","Next · "+(nx?nx.name.split(" ")[0]:"no bookings")));o.append(sm);followUps(o,r,today,nm);
   if(!live.length){const e=document.createElement("div");e.className="empty";e.textContent="No upcoming bookings.";o.append(e);return true}
   let lastD="";live.forEach(b=>{if(b.date!==lastD){lastD=b.date;const h=document.createElement("h3");h.textContent=(b.date===today?"Today · ":"")+nice(b.date);h.style.margin="16px 0 6px";o.append(h)}
    const e=document.createElement("div");e.className="bk";e.innerHTML='<b></b><small></small><br><a></a> <button class="chip" type="button" style="margin-top:6px">Cancel</button>';
