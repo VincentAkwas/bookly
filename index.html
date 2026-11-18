@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bookly · Book anything in one chat</title>
+<style>
+:root{--bg:#f4f7f6;--card:#fff;--ink:#12302b;--mute:#5d7a74;--acc:#0f9d8a;--line:#dbe7e4;--bot:#eaf3f1;--mefg:#fff;--warn:#c2410c;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1716;--card:#142422;--ink:#e3f2ef;--mute:#8fb0a9;--line:#24403b;--bot:#1b302d;--mefg:#04201c;--warn:#fb923c;color-scheme:dark}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+a{color:inherit}
+.wrap{max-width:980px;margin:0 auto;padding:18px}
+.hero{text-align:center;padding:26px 8px 18px}.hero h1{margin:0 0 6px;font-size:clamp(26px,5vw,38px)}.hero p{margin:0;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:18px}
+.biz{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;text-decoration:none;display:flex;flex-direction:column;gap:6px;transition:transform .2s,box-shadow .2s;border-top:5px solid var(--c)}
+.biz:hover{transform:translateY(-4px);box-shadow:0 10px 24px #0002}
+.biz .em{font-size:34px}.biz b{font-size:17px}.biz small{color:var(--mute)}.biz .go{margin-top:8px;color:var(--c);font-weight:700}
+.app{max-width:1000px;height:100%;margin:0 auto;display:grid;grid-template-columns:1fr 290px;gap:14px;padding:14px}
+@media(max-width:760px){.app{grid-template-columns:1fr;grid-template-rows:1fr auto}.side{max-height:30vh}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;border-top:4px solid var(--c)}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--c);display:grid;place-items:center;font-size:20px}
+.head small{color:var(--mute);display:block}.back{margin-left:auto;font-size:13px;color:var(--mute)}
+#log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:84%;padding:9px 13px;border-radius:14px;white-space:pre-wrap;animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.bot{background:var(--bot);align-self:flex-start;border-bottom-left-radius:4px}
+.me{background:var(--c);color:var(--mefg);align-self:flex-end;border-bottom-right-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-self:flex-start;max-width:92%}
+.chip,.wa{border:1px solid var(--c);color:var(--ink);background:transparent;border-radius:999px;padding:5px 12px;font:inherit;cursor:pointer;text-decoration:none}
+.chip:hover{background:var(--c);color:var(--mefg)}.wa{background:#25d366;border-color:#25d366;color:#04230f;font-weight:600;align-self:flex-start}
+.typing span{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:var(--mute);animation:b 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{transform:translateY(-4px);opacity:.4}}
+form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+input{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit;min-width:0}
+.send{background:var(--c);color:var(--mefg);border:0;border-radius:12px;padding:0 16px;font:inherit;font-weight:600;cursor:pointer}
+.side h3{margin:0;padding:12px 16px;border-bottom:1px solid var(--line);font-size:14px}
+#list{overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.bk{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}.bk b{display:block}.bk small{color:var(--mute)}
+.empty{color:var(--mute);padding:10px;text-align:center}
+.foot{text-align:center;color:var(--mute);font-size:12px;padding:20px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ====== SETUP: paste your Google Apps Script Web App URL between the quotes ====== */
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwKAmuIesugZ2eg_2acEEhEw_9nxuNNeFdq1zhll0JA4PhiKYHV_GIvvAgZDbMdnxxCYg/exec";
+/* ================================================================================== */
+const DEMO=[
+ {id:"lablens-lab",name:"LabLens Diagnostics Lab",tagline:"Accurate results, fast",emoji:"🧪",color:"#3b82f6",open:8,close:16,whatsapp:"233509460156",services:[{name:"Malaria test",price:"30"},{name:"Full blood count",price:"50"},{name:"Urinalysis",price:"25"},{name:"Blood sugar",price:"20"},{name:"Lipid profile",price:"120"}]},
+ {id:"curtain-pro",name:"Curtain Pro Installations",tagline:"Measured, fitted, finished",emoji:"🪟",color:"#b45309",open:8,close:17,whatsapp:"233509460156",services:[{name:"Site visit & measurement",price:"0"},{name:"Curtain installation",price:"150"},{name:"Rod & rail fitting",price:"80"},{name:"Blinds fitting",price:"100"}]},
+ {id:"queens-salon",name:"Queen’s Ladies Salon",tagline:"Braids, weaves and style",emoji:"💇‍♀️",color:"#d9488b",open:8,close:18,whatsapp:"233509460156",services:[{name:"Braids",price:"250"},{name:"Wig installation",price:"150"},{name:"Relaxer & style",price:"120"},{name:"Weave-on",price:"200"},{name:"Manicure & pedicure",price:"100"}]},
+ {id:"kwame-barbers",name:"Kwame’s Barbers",tagline:"Fresh cuts, sharp lines",emoji:"💈",color:"#0f9d8a",open:8,close:18,whatsapp:"233509460156",services:[{name:"Haircut",price:"50"},{name:"Beard trim",price:"30"},{name:"Haircut + beard",price:"70"}]}
+];
+const DAYS=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"],MON=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+const $=s=>document.querySelector(s),root=$("#root");
+async function api(p){if(!SCRIPT_URL)return null;try{const r=await fetch(SCRIPT_URL+"?"+new URLSearchParams(p));return await r.json()}catch(e){return null}}
+const key=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+const fromKey=k=>{const[a,b,c]=k.split("-").map(Number);return new Date(a,b-1,c)};
+const nice=k=>fromKey(k).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"short"});
+const t12=t=>{const[h,m]=t.split(":").map(Number);return(h%12||12)+":"+String(m).padStart(2,"0")+(h<12?" am":" pm")};
+const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
+let BIZ=[],B=null,d={},awaiting=null,busy=false,cache={},mine=[];
+const store={get(k,f){try{return JSON.parse(localStorage.getItem(k))||f}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+async function init(){
+ const r=await api({action:"businesses"});BIZ=r&&r.businesses&&r.businesses.length?r.businesses:DEMO;
+ const id=new URLSearchParams(location.search).get("b");B=BIZ.find(x=>x.id===id)||null;
+ const ow=new URLSearchParams(location.search).get("owner");
+ if(ow)return ownerView(ow);
+ B?chatView():dirView()}
+function dirView(){
+ document.documentElement.style.setProperty("--c","#0f9d8a");
+ root.innerHTML='<div class="wrap"><div class="hero"><h1>Book anything in one chat 💬</h1><p>Pick a business, tell the agent what you need, and the owner is notified instantly.</p></div><div class="grid"></div><div class="foot">'+(SCRIPT_URL?"Live":"Demo mode: bookings stay on this device until you connect the backend")+'</div></div>';
+ const g=$(".grid");BIZ.forEach(b=>{const a=document.createElement("a");a.className="biz";a.href="?b="+encodeURIComponent(b.id);a.style.setProperty("--c",b.color);a.innerHTML='<span class="em"></span><b></b><small></small><span class="go">Book now →</span>';a.querySelector(".em").textContent=b.emoji;a.querySelector("b").textContent=b.name;a.querySelector("small").textContent=b.tagline+" · "+b.services.length+" services";g.append(a)})}
+function chatView(){
+ document.documentElement.style.setProperty("--c",B.color);document.title=B.name+" · Bookly";mine=store.get("bk_"+B.id,[]);
+ root.innerHTML='<div class="app"><section class="panel"><div class="head"><div class="logo"></div><div><b></b><small></small></div><a class="back" href="./">All businesses</a></div><div id="log"></div><form id="f"><input id="in" autocomplete="off" placeholder="e.g. '+B.services[0].name+' tomorrow at 10am"><button class="send">Send</button></form></section><aside class="panel side"><h3>My bookings here</h3><div id="list"></div></aside></div>';
+ $(".logo").textContent=B.emoji;$(".head b").textContent=B.name;$(".head small").textContent=B.tagline+" · Mon–Sat, "+t12(B.open+":00")+" – "+t12(B.close+":00");
+ $("#f").onsubmit=e=>{e.preventDefault();const v=$("#in").value;$("#in").value="";submit(v)};render();
+ say("Hi, welcome to "+B.name+"! 👋 What would you like to book? Type it naturally, or tap a service.",B.services.map(s=>s.name+(s.price?" · GH₵"+s.price:"")),300)}
+const SLOTS=()=>{const s=[];for(let h=B.open;h<B.close;h++){s.push(String(h).padStart(2,"0")+":00");s.push(String(h).padStart(2,"0")+":30")}return s};
+async function loadTaken(date){if(cache[date])return cache[date];const r=await api({action:"slots",b:B.id,date});cache[date]=new Set(r&&r.taken||[]);return cache[date]}
+async function free(date){const tk=await loadTaken(date),now=new Date(),td=date===key(now);
+ return SLOTS().filter(t=>{if(tk.has(t)||mine.some(b=>b.date===date&&b.time===t))return false;if(!SCRIPT_URL&&hash(B.id+date+t)%5===0)return false;if(td){const[h,m]=t.split(":").map(Number);if(h*60+m<=now.getHours()*60+now.getMinutes()+30)return false}return true})}
+function say(text,chips,delay=450,link){return new Promise(r=>{const lg=$("#log"),ty=document.createElement("div");ty.className="m bot typing";ty.innerHTML="<span></span><span></span><span></span>";lg.append(ty);lg.scrollTop=1e9;setTimeout(()=>{ty.remove();const m=document.createElement("div");m.className="m bot";m.textContent=text;lg.append(m);
+ if(link){const a=document.createElement("a");a.className="wa";a.href=link.url;a.target="_blank";a.rel="noopener";a.textContent=link.label;lg.append(a)}
+ if(chips&&chips.length){const c=document.createElement("div");c.className="chips";chips.forEach(x=>{const b=document.createElement("button");b.className="chip";b.type="button";b.textContent=x;b.onclick=()=>{c.remove();submit(x)};c.append(b)});lg.append(c)}lg.scrollTop=1e9;r()},delay)})}
+function user(t){const m=document.createElement("div");m.className="m me";m.textContent=t;$("#log").append(m);$("#log").scrollTop=1e9}
+function parseDate(t){const now=new Date();now.setHours(0,0,0,0);let x,m;
+ if(/day after tomorrow/.test(t)){x=new Date(now);x.setDate(x.getDate()+2);return key(x)}
+ if(/tomorrow|tmrw/.test(t)){x=new Date(now);x.setDate(x.getDate()+1);return key(x)}
+ if(/\btoday\b/.test(t))return key(now);
+ for(let i=0;i<7;i++)if(new RegExp("\\b("+DAYS[i]+"|"+DAYS[i].slice(0,3)+")\\b").test(t)){x=new Date(now);let df=(i-x.getDay()+7)%7;if(df===0)df=7;x.setDate(x.getDate()+df);return key(x)}
+ m=t.match(/(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:of\s*)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+ if(m){x=new Date(now.getFullYear(),MON.indexOf(m[2]),+m[1]);if(x<now)x.setFullYear(x.getFullYear()+1);return key(x)}
+ m=t.match(/\b(\d{1,2})\/(\d{1,2})\b/);if(m){x=new Date(now.getFullYear(),+m[2]-1,+m[1]);if(x<now)x.setFullYear(x.getFullYear()+1);return key(x)}return null}
+function parseTime(t){let m=t.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
+ if(m){let h=+m[1]%12;if(m[3]==="pm")h+=12;return String(h).padStart(2,"0")+":"+(+m[2]>=30?"30":"00")}
+ m=t.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);if(m)return String(+m[1]).padStart(2,"0")+":"+(+m[2]>=30?"30":"00");
+ if(/noon/.test(t))return"12:00";
+ m=t.match(/\bat\s*(\d{1,2})\b/);if(m){let h=+m[1];if(h<B.open)h+=12;return String(h).padStart(2,"0")+":00"}return null}
+function parseService(t){const clean=t.replace(/ · gh₵\d+/,"");const ex=B.services.find(s=>s.name.toLowerCase()===clean);if(ex)return ex.name;
+ let best=null,sc=0;B.services.forEach(s=>{const w=s.name.toLowerCase().split(/[^a-z]+/).filter(x=>x.length>3||s.name.split(/\W+/).length===1);let n=0;w.forEach(x=>{if(t.includes(x.slice(0,Math.max(4,x.length-2))))n++});if(n>sc){sc=n;best=s.name}});return best}
+function parseName(t){const m=t.match(/(?:my name is|i am|i’m|i'm|im|this is|name:)\s+([a-z][a-z' -]{1,28})/i);return m?cap(m[1].trim()):null}
+const cap=s=>s.replace(/\b\w/g,c=>c.toUpperCase());
+async function dayChips(){const out=[],n=new Date();n.setHours(0,0,0,0);for(let i=0;out.length<5&&i<14;i++){const x=new Date(n);x.setDate(n.getDate()+i);if(x.getDay()===0)continue;if(!(await free(key(x))).length)continue;out.push(i===0?"Today":i===1?"Tomorrow":x.toLocaleDateString("en-GB",{weekday:"long"}))}return out}
+async function next(){
+ if(!d.service){awaiting="service";return say("What would you like to book?",B.services.map(s=>s.name+(s.price?" · GH₵"+s.price:"")))}
+ if(!d.date){awaiting="date";return say("Great, "+d.service+". Which day works for you?",await dayChips())}
+ if(fromKey(d.date).getDay()===0){d.date=null;awaiting="date";return say("We’re closed on Sundays. Pick another day?",await dayChips())}
+ if(fromKey(d.date)<new Date(new Date().setHours(0,0,0,0))){d.date=null;awaiting="date";return say("That date has passed. Which day would you like?",await dayChips())}
+ const fr=await free(d.date);
+ if(!fr.length){d.date=null;d.time=null;awaiting="date";return say("That day is fully booked. How about one of these?",await dayChips())}
+ if(d.time&&!fr.includes(d.time)){const w=d.time;d.time=null;awaiting="time";const near=fr.slice().sort((a,b)=>Math.abs(a.replace(":","")-w.replace(":",""))-Math.abs(b.replace(":","")-w.replace(":",""))).slice(0,4).sort();return say(t12(w)+" isn’t available on "+nice(d.date)+". Closest openings:",near.map(t12))}
+ if(!d.time){awaiting="time";const pick=fr.filter((_,i)=>i%Math.ceil(fr.length/8)===0).slice(0,8);return say("Open times on "+nice(d.date)+" ("+fr.length+" free). Pick one or type your own:",pick.map(t12))}
+ if(!d.name){awaiting="name";return say("Almost done. What name should I put the booking under?")}
+ if(!d.phone){awaiting="phone";return say("And a phone number so "+B.name+" can reach you?")}
+ awaiting="confirm";const sv=B.services.find(s=>s.name===d.service);
+ return say("Please confirm your booking:\n\n• "+d.service+(sv&&sv.price?" (GH₵"+sv.price+")":"")+"\n• "+nice(d.date)+" at "+t12(d.time)+"\n• "+d.name+" · "+d.phone,["Yes, confirm","Change something"])}
+async function book(){
+ let ref="BK-"+Math.random().toString(36).slice(2,6).toUpperCase();
+ if(SCRIPT_URL){const r=await api({action:"book",b:B.id,service:d.service,date:d.date,time:d.time,name:d.name,phone:d.phone});
+  if(!r||!r.ok){if(r&&r.taken){delete cache[d.date];d.time=null;await say("Sorry, someone just took that slot. Let’s pick another.");return next()}return say("Something went wrong saving your booking. Please try again in a moment.",["Yes, confirm"])}ref=r.ref}
+ const b={ref,...d};mine.push(b);store.set("bk_"+B.id,mine);delete cache[d.date];render();d={};awaiting=null;
+ const msg="Hello "+B.name+", I’d like to confirm my booking "+b.ref+": "+b.service+" on "+nice(b.date)+" at "+t12(b.time)+". Name: "+b.name+", phone: "+b.phone;
+ const wa=B.whatsapp?{label:"Also tell "+B.name+" on WhatsApp",url:"https://wa.me/"+B.whatsapp.replace(/\D/g,"")+"?text="+encodeURIComponent(msg)}:null;
+ await say("You’re booked, "+b.name.split(" ")[0]+"! ✅\n\n"+b.service+"\n"+nice(b.date)+" at "+t12(b.time)+"\nReference: "+b.ref+"\n\n"+(SCRIPT_URL?B.name+" has been notified. ":"")+"Please arrive 10 minutes early.",["Book another"],450,wa)}
+async function handle(raw){const t=raw.toLowerCase().trim();
+ if(/^(hi|hello|hey)\b/.test(t)&&!awaiting)return say("Hi! Tell me what you need, for example “"+B.services[0].name+" Friday 9am”.",B.services.map(s=>s.name));
+ if(/book another|new booking/.test(t)){d={};return next()}
+ if(awaiting==="confirm"){if(/^(yes|yeah|y|ok|okay|confirm|sure)\b/.test(t))return book();if(/change|^no/.test(t)){awaiting=null;return say("What should I change?",["Service","Day","Time","Name","Phone"])}}
+ if(/^(service|day|time|name|phone)$/.test(t)){const f=t==="day"?"date":t;d[f]=null;if(f==="date")d.time=null;return next()}
+ const sv=parseService(t),dt=parseDate(t),tm=parseTime(t),nm=parseName(raw);
+ if(sv)d.service=sv;if(dt)d.date=dt;if(tm)d.time=tm;if(nm)d.name=nm;
+ if(awaiting==="time"&&!tm){const h=SLOTS().find(s=>t12(s)===t);if(h)d.time=h}
+ if(awaiting==="phone"){const p=raw.replace(/[^\d+]/g,"");if(p.length>=9)d.phone=raw.trim();else return say("That doesn’t look like a phone number. Try again, e.g. 024 123 4567.")}
+ if(awaiting==="name"&&!nm&&/^[a-z][a-z' -]{1,28}$/i.test(raw.trim())&&!sv&&!dt)d.name=cap(raw.trim());
+ if(!sv&&!dt&&!tm&&!nm&&!d.service&&!d.date&&awaiting!=="name"&&awaiting!=="phone")return say("I can book: "+B.services.map(s=>s.name).join(", ")+". Try “"+B.services[0].name+" Thursday 2pm”.",B.services.map(s=>s.name));
+ return next()}
+function render(){const l=$("#list");l.innerHTML="";if(!mine.length){l.innerHTML='<div class="empty">Nothing booked yet.</div>';return}
+ mine.slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).forEach(b=>{const e=document.createElement("div");e.className="bk";e.innerHTML="<small></small><b></b><small></small>";const s=e.querySelectorAll("small");s[0].textContent=b.ref;e.querySelector("b").textContent=b.service;s[1].textContent=nice(b.date)+" · "+t12(b.time);l.append(e)})}
+async function submit(t){if(busy||!t.trim())return;busy=true;user(t);try{await handle(t)}finally{busy=false}}
+async function ownerView(id){
+ document.documentElement.style.setProperty("--c","#0f9d8a");const biz=BIZ.find(x=>x.id===id);
+ root.innerHTML='<div class="wrap"><div class="hero"><h1></h1><p>Owner view · today’s bookings and what’s coming</p></div><form id="pf" style="max-width:340px;margin:0 auto;border:0"><input id="pin" type="password" placeholder="Owner PIN" autocomplete="off"><button class="send">Open</button></form><div id="ob" style="max-width:560px;margin:10px auto"></div></div>';
+ $(".hero h1").textContent=biz?biz.emoji+" "+biz.name:"Unknown business";let pin=store.get("pin_"+id,"");
+ const load=async()=>{const r=await api({action:"bookings",b:id,pin}),o=$("#ob");if(!r||!r.ok){o.innerHTML='<div class="empty">'+(SCRIPT_URL?"Enter your owner PIN.":"Connect the backend (SCRIPT_URL) to use the owner view.")+"</div>";return false}
+  const today=key(new Date()),live=r.bookings.filter(b=>b.status!=="cancelled"&&b.date>=today);o.innerHTML="";
+  if(!live.length){o.innerHTML='<div class="empty">No upcoming bookings.</div>';return true}
+  let last="";live.forEach(b=>{if(b.date!==last){last=b.date;const h=document.createElement("h3");h.textContent=(b.date===today?"Today · ":"")+nice(b.date);h.style.margin="16px 0 6px";o.append(h)}
+   const e=document.createElement("div");e.className="bk";e.innerHTML='<b></b><small></small><br><a></a> <button class="chip" type="button" style="margin-top:6px">Cancel</button>';
+   e.querySelector("b").textContent=t12(b.time)+" · "+b.service;e.querySelector("small").textContent=b.name+" · "+b.ref;const a=e.querySelector("a");a.textContent=b.phone;a.href="tel:"+b.phone.replace(/[^\d+]/g,"");
+   e.querySelector("button").onclick=async()=>{if(confirm("Cancel "+b.ref+"?")){await api({action:"cancel",b:id,pin,ref:b.ref});load()}};o.append(e)});return true};
+ $("#pf").onsubmit=async e=>{e.preventDefault();pin=$("#pin").value;if(await load()){store.set("pin_"+id,pin);clearInterval(window._t);window._t=setInterval(load,30000)}};
+ if(pin&&await load())window._t=setInterval(load,30000)}
+init();
+</script>
+</body>
+</html>
